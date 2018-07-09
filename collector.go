@@ -145,6 +145,13 @@ var (
 		nil,
 	)
 
+	upDcmiDesc = prometheus.NewDesc(
+		prometheus.BuildFQName(namespace, "", "up"),
+		"'1' if a scrape of the IPMI-DCMI was successful, '0' otherwise.",
+		nil,
+		nil,
+	)
+
 	durationDesc = prometheus.NewDesc(
 		prometheus.BuildFQName(namespace, "scrape_duration", "seconds"),
 		"Returns how long the scrape took to complete in seconds.",
@@ -388,6 +395,14 @@ func (c collector) markAsDown(ch chan<- prometheus.Metric) {
 	)
 }
 
+func (c collector) markDCMIAsDown(ch chan<- prometheus.Metric) {
+	ch <- prometheus.MustNewConstMetric(
+		upDesc,
+		prometheus.GaugeValue,
+		float64(0),
+	)
+}
+
 // Collect implements Prometheus.Collector.
 func (c collector) Collect(ch chan<- prometheus.Metric) {
 	start := time.Now()
@@ -418,8 +433,7 @@ func (c collector) Collect(ch chan<- prometheus.Metric) {
 	currentPowerConsumption, err := c.getPowerConsumption(creds)
 	if err != nil {
 		log.Errorf("Could not collect ipmi-dcmi power metrics: %s", err)
-		c.markAsDown(ch)
-		return
+		c.markDCMIAsDown(ch)
 	}
 
 	err = c.collectMonitoring(ch, creds)
