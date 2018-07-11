@@ -21,4 +21,6 @@ exclude_sensor_ids:
   - 85
   - 86
   - 87
-  
+
+exclude_sensor_types:
+  - "Entity_Presence"

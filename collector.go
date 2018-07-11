@@ -171,7 +171,8 @@ func freeipmiOutput(cmd, host, user, password string, arg ...string) ([]byte, er
 }
 
 func ipmiMonitoringOutput(host, user, password string) ([]byte, error) {
-	return freeipmiOutput("ipmimonitoring", host, user, password, "-Q", "--comma-separated-output", "--no-header-output", "--sdr-cache-recreate")
+	excludeTypes := c.config.ExcludeSensorTypes()
+	return freeipmiOutput("ipmi-sensors", host, user, password, "-Q", "--comma-separated-output", "--no-header-output", "--sdr-cache-recreate", "--ignore-not-available-sensors", "-T " + excludeTypes)
 }
 
 func ipmiDCMIOutput(host, user, password string) ([]byte, error) {
