@@ -24,3 +24,4 @@ exclude_sensor_ids:
 
 exclude_sensor_types:
   - "Entity_Presence"
+  - "Platform_Alert"
