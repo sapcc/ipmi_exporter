@@ -1,8 +1,12 @@
-credentials:
-        default:
-                user: "default_user"
-                pass: "example_pw"
-        10.46.97.11:
-                user: "ironic"
-                pass: "pw"
-  
+exclude_sensor_ids:
+  - 2
+  - 29
+  - 32
+  - 50
+  - 52
+  - 55
+  - 80
+  - 81
+  - 82
+  - 83
+  - 84

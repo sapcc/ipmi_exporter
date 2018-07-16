@@ -397,7 +397,7 @@ func (c collector) markAsDown(ch chan<- prometheus.Metric) {
 
 func (c collector) markDCMIAsDown(ch chan<- prometheus.Metric) {
 	ch <- prometheus.MustNewConstMetric(
-		upDesc,
+		upDcmiDesc,
 		prometheus.GaugeValue,
 		float64(0),
 	)
@@ -433,7 +433,7 @@ func (c collector) Collect(ch chan<- prometheus.Metric) {
 	currentPowerConsumption, err := c.getPowerConsumption(creds)
 	if err != nil {
 		log.Errorf("Could not collect ipmi-dcmi power metrics: %s", err)
-		c.markDCMIAsDown(ch)
+		//c.markDCMIAsDown(ch)
 	}
 
 	err = c.collectMonitoring(ch, creds)

@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"io/ioutil"
+	"os"
 	"strings"
 	"sync"
 
@@ -85,6 +86,17 @@ func (sc *SafeConfig) ReloadConfig(configFile string) error {
 	if err := yaml.Unmarshal(yamlFile, c); err != nil {
 		log.Errorf("Error parsing config file: %s", err)
 		return err
+	}
+
+	ipmiUser := os.Getenv("IPMI_USER")
+	ipmiPassword := os.Getenv("IPMI_PASSWORD")
+
+	if ipmiUser != "" && ipmiPassword != "" {
+		sc.C.Credentials["default"] = Credentials{
+			User:     ipmiUser,
+			Password: ipmiPassword,
+		}
+		log.Infoln("Found ipmi user env")
 	}
 
 	sc.Lock()
