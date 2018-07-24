@@ -88,20 +88,23 @@ func (sc *SafeConfig) ReloadConfig(configFile string) error {
 		return err
 	}
 
+	sc.Lock()
+	sc.C = c
+	sc.Unlock()
+
 	ipmiUser := os.Getenv("IPMI_USER")
 	ipmiPassword := os.Getenv("IPMI_PASSWORD")
 
 	if ipmiUser != "" && ipmiPassword != "" {
+		if sc.C.Credentials == nil {
+			sc.C.Credentials = make(map[string]Credentials)
+		}
 		sc.C.Credentials["default"] = Credentials{
 			User:     ipmiUser,
 			Password: ipmiPassword,
 		}
 		log.Infoln("Found ipmi user env")
 	}
-
-	sc.Lock()
-	sc.C = c
-	sc.Unlock()
 
 	log.Infoln("Loaded config file")
 	return nil
