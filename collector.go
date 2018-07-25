@@ -177,8 +177,12 @@ func freeipmiOutput(cmd, host, user, password string, arg ...string) ([]byte, er
 	return out, err
 }
 
-func ipmiMonitoringOutput(host, user, password string) ([]byte, error) {
-	return freeipmiOutput("ipmimonitoring", host, user, password, "-Q", "--comma-separated-output", "--no-header-output", "--sdr-cache-recreate")
+func ipmiMonitoringOutput(host, user, password string, excludeTypes []string) ([]byte, error) {
+
+	exT := strings.Join(excludeTypes, " ")
+	exT = "--exclude-sensor-types=" + exT
+	return freeipmiOutput("ipmi-sensors", host, user, password, "-Q", "--comma-separated-output", "--no-header-output",
+		"--sdr-cache-recreate", "--ignore-not-available-sensors", exT)
 }
 
 func ipmiDCMIOutput(host, user, password string) ([]byte, error) {
@@ -312,7 +316,8 @@ func collectGenericSensor(ch chan<- prometheus.Metric, state float64, data senso
 }
 
 func (c collector) collectMonitoring(ch chan<- prometheus.Metric, creds Credentials) error {
-	output, err := ipmiMonitoringOutput(c.target, creds.User, creds.Password)
+	excludeTypes := c.config.ExcludeSensorTypes()
+	output, err := ipmiMonitoringOutput(c.target, creds.User, creds.Password, excludeTypes)
 	if err != nil {
 		log.Errorln(err)
 		return err
@@ -395,14 +400,6 @@ func (c collector) markAsDown(ch chan<- prometheus.Metric) {
 	)
 }
 
-func (c collector) markDCMIAsDown(ch chan<- prometheus.Metric) {
-	ch <- prometheus.MustNewConstMetric(
-		upDcmiDesc,
-		prometheus.GaugeValue,
-		float64(0),
-	)
-}
-
 // Collect implements Prometheus.Collector.
 func (c collector) Collect(ch chan<- prometheus.Metric) {
 	start := time.Now()
@@ -425,15 +422,12 @@ func (c collector) Collect(ch chan<- prometheus.Metric) {
 
 	firmwareRevision, manufacturerID, err := c.getBmcInfo(creds)
 	if err != nil {
-		log.Errorf("Could not collect bmc-info metrics: %s", err)
-		c.markAsDown(ch)
-		return
+		log.Infof("Could not collect bmc-info metrics: %s", err)
 	}
 
 	currentPowerConsumption, err := c.getPowerConsumption(creds)
 	if err != nil {
-		log.Errorf("Could not collect ipmi-dcmi power metrics: %s", err)
-		//c.markDCMIAsDown(ch)
+		log.Infof("Could not collect ipmi-dcmi power metrics: %s", err)
 	}
 
 	err = c.collectMonitoring(ch, creds)

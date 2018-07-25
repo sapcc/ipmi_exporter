@@ -15,7 +15,8 @@ import (
 type Config struct {
 	Credentials map[string]Credentials `yaml:"credentials"`
 
-	ExcludeSensorIDs []int64 `yaml:"exclude_sensor_ids"`
+	ExcludeSensorIDs   []int64  `yaml:"exclude_sensor_ids"`
+	ExcludeSensorTypes []string `yaml:"exclude_sensor_types"`
 
 	// Catches all undefined fields and must be empty after parsing.
 	XXX map[string]interface{} `yaml:",inline"`
@@ -136,4 +137,12 @@ func (sc *SafeConfig) ExcludeSensorIDs() []int64 {
 	sc.Lock()
 	defer sc.Unlock()
 	return sc.C.ExcludeSensorIDs
+}
+
+// ExcludeSensorTypes returns the list of excluded sensor IDs in a
+// concurrency-safe way.
+func (sc *SafeConfig) ExcludeSensorTypes() []string {
+	sc.Lock()
+	defer sc.Unlock()
+	return sc.C.ExcludeSensorTypes
 }

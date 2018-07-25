@@ -1,0 +1,28 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: ipmi-exporter-test
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ipmi-exporter
+      type: exporter
+  template:
+    metadata:
+      labels:
+        app: ipmi-exporter
+        type: exporter
+    spec:
+      containers:
+      - name: ipmi-exporter
+        image: "hub.global.cloud.sap/monsoon/ipmi-exporter:v0.0.3"
+        env:
+        - name: APP_ENV
+          value: "dev"
+        - name: IPMI_USER
+          value: "ironic"
+        - name: IPMI_PASSWORD
+          value: "AHardPa55w0rd!"
+        ports:
+        - containerPort: 9290
