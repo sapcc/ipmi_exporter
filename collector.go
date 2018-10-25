@@ -5,6 +5,7 @@ import (
 	"encoding/csv"
 	"fmt"
 	"math"
+	"os"
 	"os/exec"
 	"path"
 	"regexp"
@@ -22,6 +23,7 @@ var (
 	ipmiDCMICurrentPowerRegex    = regexp.MustCompile(`^Current Power\s*:\s*(?P<value>[0-9.]*)\s*Watts.*`)
 	bmcInfoFirmwareRevisionRegex = regexp.MustCompile(`^Firmware Revision\s*:\s*(?P<value>[0-9.]*).*`)
 	bmcInfoManufacturerIDRegex   = regexp.MustCompile(`^Manufacturer ID\s*:\s*(?P<value>.*)`)
+	sdrCacheDirectoy             = "/root/.freeipmi/sdr-cache/"
 )
 
 type collector struct {
@@ -47,12 +49,14 @@ var (
 		nil,
 	)
 
-	sensorValueDesc = prometheus.NewDesc(
-		prometheus.BuildFQName(namespace, "sensor", "value"),
-		"Generic data read from an IPMI sensor of unknown type, relying on labels for context.",
-		[]string{"id", "name", "type"},
-		nil,
-	)
+	/*
+		sensorValueDesc = prometheus.NewDesc(
+			prometheus.BuildFQName(namespace, "sensor", "value"),
+			"Generic data read from an IPMI sensor of unknown type, relying on labels for context.",
+			[]string{"id", "name", "type"},
+			nil,
+		)
+	*/
 
 	fanSpeedDesc = prometheus.NewDesc(
 		prometheus.BuildFQName(namespace, "fan_speed", "rpm"),
@@ -177,6 +181,36 @@ func freeipmiOutput(cmd, host, user, password string, arg ...string) ([]byte, er
 	return out, err
 }
 
+func flushSensorSDRCache(host, user, password string) error {
+	dirRead, err := os.Open(sdrCacheDirectoy)
+	dirFiles, err := dirRead.Readdir(0)
+	if err != nil {
+		return err
+	}
+	now := time.Now().Local()
+	nextTick := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, time.Local)
+
+	for index := range dirFiles {
+		file := dirFiles[index]
+		name := file.Name()
+		if strings.Contains(name, host) {
+			info, err := os.Stat(sdrCacheDirectoy + name)
+			if err != nil {
+				log.Error(err)
+				continue
+			}
+			modTime := info.ModTime()
+			log.Debugf("SDR-Cache age: %s ", modTime)
+			if nextTick.Day()-modTime.Day() > 0 || nextTick.Month() != modTime.Month() {
+				log.Infof("Starting to flush SDR Cache. Cache-Time %s, NextTick: %s", modTime, nextTick)
+				_, err := freeipmiOutput("ipmi-sensors", host, user, password, "--flush-cache")
+				return err
+			}
+		}
+	}
+	return nil
+}
+
 func ipmiMonitoringOutput(host, user, password string, excludeTypes []string) ([]byte, error) {
 
 	exT := strings.Join(excludeTypes, ",")
@@ -270,7 +304,7 @@ func getBMCInfoManufacturerID(ipmiOutput []byte) (string, error) {
 // Describe implements Prometheus.Collector.
 func (c collector) Describe(ch chan<- *prometheus.Desc) {
 	ch <- sensorStateDesc
-	ch <- sensorValueDesc
+	//ch <- sensorValueDesc
 	ch <- fanSpeedDesc
 	ch <- temperatureDesc
 	ch <- powerConsumption
@@ -280,13 +314,15 @@ func (c collector) Describe(ch chan<- *prometheus.Desc) {
 }
 
 func collectTypedSensor(ch chan<- prometheus.Metric, desc, stateDesc *prometheus.Desc, state float64, data sensorData) {
-	ch <- prometheus.MustNewConstMetric(
-		desc,
-		prometheus.GaugeValue,
-		data.Value,
-		strconv.FormatInt(data.ID, 10),
-		data.Name,
-	)
+	/*
+		ch <- prometheus.MustNewConstMetric(
+			desc,
+			prometheus.GaugeValue,
+			data.Value,
+			strconv.FormatInt(data.ID, 10),
+			data.Name,
+		)
+	*/
 	ch <- prometheus.MustNewConstMetric(
 		stateDesc,
 		prometheus.GaugeValue,
@@ -297,14 +333,16 @@ func collectTypedSensor(ch chan<- prometheus.Metric, desc, stateDesc *prometheus
 }
 
 func collectGenericSensor(ch chan<- prometheus.Metric, state float64, data sensorData) {
-	ch <- prometheus.MustNewConstMetric(
-		sensorValueDesc,
-		prometheus.GaugeValue,
-		data.Value,
-		strconv.FormatInt(data.ID, 10),
-		data.Name,
-		data.Type,
-	)
+	/*
+		ch <- prometheus.MustNewConstMetric(
+			sensorValueDesc,
+			prometheus.GaugeValue,
+			data.Value,
+			strconv.FormatInt(data.ID, 10),
+			data.Name,
+			data.Type,
+		)
+	*/
 	ch <- prometheus.MustNewConstMetric(
 		sensorStateDesc,
 		prometheus.GaugeValue,
@@ -316,6 +354,10 @@ func collectGenericSensor(ch chan<- prometheus.Metric, state float64, data senso
 }
 
 func (c collector) collectMonitoring(ch chan<- prometheus.Metric, creds Credentials) error {
+	err := flushSensorSDRCache(c.target, creds.User, creds.Password)
+	if err != nil {
+		log.Errorln(err)
+	}
 	excludeTypes := c.config.ExcludeSensorTypes()
 	output, err := ipmiMonitoringOutput(c.target, creds.User, creds.Password, excludeTypes)
 	if err != nil {
