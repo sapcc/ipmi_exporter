@@ -361,13 +361,13 @@ func (c collector) collectMonitoring(ch chan<- prometheus.Metric, creds Credenti
 	excludeTypes := c.config.ExcludeSensorTypes()
 	output, err := ipmiMonitoringOutput(c.target, creds.User, creds.Password, excludeTypes)
 	if err != nil {
-		log.Errorln(err)
+		log.Debugln(err)
 		return err
 	}
 	excludeIds := c.config.ExcludeSensorIDs()
 	results, err := splitMonitoringOutput(output, excludeIds)
 	if err != nil {
-		log.Errorln(err)
+		log.Debugln(err)
 		return err
 	}
 	for _, data := range results {
@@ -410,7 +410,7 @@ func (c collector) collectMonitoring(ch chan<- prometheus.Metric, creds Credenti
 func (c collector) getPowerConsumption(creds Credentials) (float64, error) {
 	output, err := ipmiDCMIOutput(c.target, creds.User, creds.Password)
 	if err != nil {
-		log.Errorln(err)
+		log.Debugln(err)
 		return float64(-1), err
 	}
 	return getCurrentPowerConsumption(output)
@@ -419,7 +419,7 @@ func (c collector) getPowerConsumption(creds Credentials) (float64, error) {
 func (c collector) getBmcInfo(creds Credentials) (string, string, error) {
 	output, err := bmcInfoOutput(c.target, creds.User, creds.Password)
 	if err != nil {
-		log.Errorln(err)
+		log.Debugln(err)
 		return "", "", err
 	}
 	firmwareRevision, err := getBMCInfoFirmwareRevision(output)
@@ -464,12 +464,12 @@ func (c collector) Collect(ch chan<- prometheus.Metric) {
 
 	firmwareRevision, manufacturerID, err := c.getBmcInfo(creds)
 	if err != nil {
-		log.Infof("Could not collect bmc-info metrics: %s", err)
+		log.Debugf("Could not collect bmc-info metrics: %s", err)
 	}
 
 	currentPowerConsumption, err := c.getPowerConsumption(creds)
 	if err != nil {
-		log.Infof("Could not collect ipmi-dcmi power metrics: %s", err)
+		log.Debugf("Could not collect ipmi-dcmi power metrics: %s", err)
 	}
 
 	err = c.collectMonitoring(ch, creds)
