@@ -113,9 +113,9 @@ func (sc *SafeConfig) ReloadConfig(configFile string) error {
 		if sc.C.Credentials == nil {
 			sc.C.Credentials = make(map[string]Credentials)
 		}
-		c.Credentials["netbox/cp"] = Credentials{User: netboxCPUser, Password: netboxCPPassword}
+		c.Credentials["cp/netbox"] = Credentials{User: netboxCPUser, Password: netboxCPPassword}
 
-		log.Infoln("Found netbox/cp user env")
+		log.Infoln("Found cp/netbox user env")
 	}
 
 	log.Infoln("Loaded config file")
