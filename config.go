@@ -107,16 +107,33 @@ func (sc *SafeConfig) ReloadConfig(configFile string) error {
 		log.Infoln("Found ipmi user env")
 	}
 
+	netboxCPUser := os.Getenv("NETBOX_CP_USER")
+	netboxCPPassword := os.Getenv("NETBOX_CP_PASSWORD")
+	if netboxCPUser != "" && netboxCPPassword != "" {
+		if sc.C.Credentials == nil {
+			sc.C.Credentials = make(map[string]Credentials)
+		}
+		c.Credentials["netbox/cp"] = Credentials{User: netboxCPUser, Password: netboxCPPassword}
+
+		log.Infoln("Found netbox/cp user env")
+	}
+
 	log.Infoln("Loaded config file")
 	return nil
 }
 
 // CredentialsForTarget returns the Credentials for a given target, or the
 // default. It is concurrency-safe.
-func (sc *SafeConfig) CredentialsForTarget(target string) (Credentials, error) {
+func (sc *SafeConfig) CredentialsForTarget(target string, job string) (Credentials, error) {
 	sc.Lock()
 	defer sc.Unlock()
 	if credentials, ok := sc.C.Credentials[target]; ok {
+		return Credentials{
+			User:     credentials.User,
+			Password: credentials.Password,
+		}, nil
+	}
+	if credentials, ok := sc.C.Credentials[job]; ok {
 		return Credentials{
 			User:     credentials.User,
 			Password: credentials.Password,

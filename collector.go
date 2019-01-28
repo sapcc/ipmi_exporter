@@ -28,6 +28,7 @@ var (
 
 type collector struct {
 	target string
+	job    string
 	config *SafeConfig
 }
 
@@ -455,7 +456,7 @@ func (c collector) Collect(ch chan<- prometheus.Metric) {
 		)
 	}()
 
-	creds, err := c.config.CredentialsForTarget(c.target)
+	creds, err := c.config.CredentialsForTarget(c.target, c.job)
 	if err != nil {
 		log.Errorf("No credentials available for target %s.", c.target)
 		c.markAsDown(ch)
