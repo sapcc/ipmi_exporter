@@ -100,11 +100,11 @@ func (sc *SafeConfig) ReloadConfig(configFile string) error {
 		if sc.C.Credentials == nil {
 			sc.C.Credentials = make(map[string]Credentials)
 		}
-		sc.C.Credentials["default"] = Credentials{
+		sc.C.Credentials["baremetal/ironic"] = Credentials{
 			User:     ipmiUser,
 			Password: ipmiPassword,
 		}
-		log.Infoln("Found ipmi user env")
+		log.Infoln("Found baremetal/ironic user env")
 	}
 
 	netboxCPUser := os.Getenv("NETBOX_CP_USER")
