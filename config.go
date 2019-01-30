@@ -122,17 +122,11 @@ func (sc *SafeConfig) ReloadConfig(configFile string) error {
 	return nil
 }
 
-// CredentialsForTarget returns the Credentials for a given target, or the
+// CredentialsForJob returns the Credentials for a given job, or the
 // default. It is concurrency-safe.
-func (sc *SafeConfig) CredentialsForTarget(target string, job string) (Credentials, error) {
+func (sc *SafeConfig) CredentialsForJob(job string) (Credentials, error) {
 	sc.Lock()
 	defer sc.Unlock()
-	if credentials, ok := sc.C.Credentials[target]; ok {
-		return Credentials{
-			User:     credentials.User,
-			Password: credentials.Password,
-		}, nil
-	}
 	if credentials, ok := sc.C.Credentials[job]; ok {
 		return Credentials{
 			User:     credentials.User,
@@ -145,7 +139,7 @@ func (sc *SafeConfig) CredentialsForTarget(target string, job string) (Credentia
 			Password: credentials.Password,
 		}, nil
 	}
-	return Credentials{}, fmt.Errorf("no credentials found for target %s", target)
+	return Credentials{}, fmt.Errorf("no credentials found for job %s", job)
 }
 
 // ExcludeSensorIDs returns the list of excluded sensor IDs in a
