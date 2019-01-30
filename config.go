@@ -100,23 +100,34 @@ func (sc *SafeConfig) ReloadConfig(configFile string) error {
 		if sc.C.Credentials == nil {
 			sc.C.Credentials = make(map[string]Credentials)
 		}
-		sc.C.Credentials["default"] = Credentials{
+		sc.C.Credentials["baremetal/ironic"] = Credentials{
 			User:     ipmiUser,
 			Password: ipmiPassword,
 		}
-		log.Infoln("Found ipmi user env")
+		log.Infoln("Found baremetal/ironic user env")
+	}
+
+	netboxCPUser := os.Getenv("NETBOX_CP_USER")
+	netboxCPPassword := os.Getenv("NETBOX_CP_PASSWORD")
+	if netboxCPUser != "" && netboxCPPassword != "" {
+		if sc.C.Credentials == nil {
+			sc.C.Credentials = make(map[string]Credentials)
+		}
+		c.Credentials["cp/netbox"] = Credentials{User: netboxCPUser, Password: netboxCPPassword}
+
+		log.Infoln("Found cp/netbox user env")
 	}
 
 	log.Infoln("Loaded config file")
 	return nil
 }
 
-// CredentialsForTarget returns the Credentials for a given target, or the
+// CredentialsForJob returns the Credentials for a given job, or the
 // default. It is concurrency-safe.
-func (sc *SafeConfig) CredentialsForTarget(target string) (Credentials, error) {
+func (sc *SafeConfig) CredentialsForJob(job string) (Credentials, error) {
 	sc.Lock()
 	defer sc.Unlock()
-	if credentials, ok := sc.C.Credentials[target]; ok {
+	if credentials, ok := sc.C.Credentials[job]; ok {
 		return Credentials{
 			User:     credentials.User,
 			Password: credentials.Password,
@@ -128,7 +139,7 @@ func (sc *SafeConfig) CredentialsForTarget(target string) (Credentials, error) {
 			Password: credentials.Password,
 		}, nil
 	}
-	return Credentials{}, fmt.Errorf("no credentials found for target %s", target)
+	return Credentials{}, fmt.Errorf("no credentials found for job %s", job)
 }
 
 // ExcludeSensorIDs returns the list of excluded sensor IDs in a

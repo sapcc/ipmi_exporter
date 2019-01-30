@@ -40,10 +40,14 @@ func handler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "'target' parameter must be specified", 400)
 		return
 	}
+	job := r.URL.Query().Get("job")
+	if job == "" {
+		log.Warnf("job parameter is not specified for target: %s", target)
+	}
 	log.Debugf("Scraping target '%s'", target)
 
 	registry := prometheus.NewRegistry()
-	collector := collector{target: target, config: sc}
+	collector := collector{target: target, job: job, config: sc}
 	registry.MustRegister(collector)
 	h := promhttp.HandlerFor(registry, promhttp.HandlerOpts{})
 	h.ServeHTTP(w, r)
