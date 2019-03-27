@@ -18,8 +18,8 @@ RUN sudo apt-get update && sudo apt-get install -y \
     build-essential \
     libgcrypt11-dev
 
-RUN wget http://ftp.gnu.org/gnu/freeipmi/freeipmi-1.6.2.tar.gz && tar xzvf freeipmi-1.6.2.tar.gz
-WORKDIR /freeipmi-1.6.2
+RUN wget http://ftp.gnu.org/gnu/freeipmi/freeipmi-1.6.3.tar.gz && tar xzvf freeipmi-1.6.3.tar.gz
+WORKDIR /freeipmi-1.6.3
 RUN ./configure && make && sudo make install && sudo ldconfig
 WORKDIR /app
 COPY --from=build-env /src/ipmi_exporter /app/
