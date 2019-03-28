@@ -388,6 +388,20 @@ func (c collector) collectMonitoring(ch chan<- prometheus.Metric, creds Credenti
 			state = math.NaN()
 		}
 
+		// if no state was set we will look at event data
+		if math.IsNaN(state) {
+			switch strings.ToUpper(data.Event) {
+			case "LIMIT NOT EXCEEDED":
+				state = 0
+			case "LIMIT EXCEEDED":
+				state = 2
+			case "PREDICTIVE FAILURE DEASSERTED":
+				state = 0
+			case "PREDICTIVE FAILURE ASSERTED":
+				state = 2
+			}
+		}
+
 		log.Debugf("Got values: %v\n", data)
 
 		switch data.Unit {
