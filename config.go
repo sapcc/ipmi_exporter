@@ -118,6 +118,17 @@ func (sc *SafeConfig) ReloadConfig(configFile string) error {
 		log.Infoln("Found cp/netbox user env")
 	}
 
+	esxiUser := os.Getenv("ESXI_USER")
+	esxiPassword := os.Getenv("ESXI_PASSWORD")
+	if esxiUser != "" && esxiPassword != "" {
+		if sc.C.Credentials == nil {
+			sc.C.Credentials = make(map[string]Credentials)
+		}
+		c.Credentials["esxi"] = Credentials{User: esxiUser, Password: esxiPassword}
+
+		log.Infoln("Found esxi user env")
+	}
+
 	log.Infoln("Loaded config file")
 	return nil
 }
