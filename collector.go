@@ -73,6 +73,20 @@ var (
 		nil,
 	)
 
+	memoryDesc = prometheus.NewDesc(
+		prometheus.BuildFQName(namespace, "memory", "errors"),
+		"Fan speed in rotations per minute.",
+		[]string{"id", "name"},
+		nil,
+	)
+
+	memoryStateDesc = prometheus.NewDesc(
+		prometheus.BuildFQName(namespace, "memory", "state"),
+		"Reported state of a fan speed sensor (0=nominal, 1=warning, 2=critical).",
+		[]string{"id", "name"},
+		nil,
+	)
+
 	temperatureDesc = prometheus.NewDesc(
 		prometheus.BuildFQName(namespace, "temperature", "celsius"),
 		"Temperature reading in degree Celsius.",
@@ -308,6 +322,7 @@ func (c collector) Describe(ch chan<- *prometheus.Desc) {
 	//ch <- sensorValueDesc
 	ch <- fanSpeedDesc
 	ch <- temperatureDesc
+	ch <- memoryDesc
 	ch <- powerConsumption
 	ch <- bmcInfo
 	ch <- upDesc
@@ -315,7 +330,7 @@ func (c collector) Describe(ch chan<- *prometheus.Desc) {
 }
 
 func collectTypedSensor(ch chan<- prometheus.Metric, desc, stateDesc *prometheus.Desc, state float64, data sensorData) {
-	/*
+	if desc == memoryDesc {
 		ch <- prometheus.MustNewConstMetric(
 			desc,
 			prometheus.GaugeValue,
@@ -323,7 +338,7 @@ func collectTypedSensor(ch chan<- prometheus.Metric, desc, stateDesc *prometheus
 			strconv.FormatInt(data.ID, 10),
 			data.Name,
 		)
-	*/
+	}
 	ch <- prometheus.MustNewConstMetric(
 		stateDesc,
 		prometheus.GaugeValue,
@@ -415,6 +430,8 @@ func (c collector) collectMonitoring(ch chan<- prometheus.Metric, creds Credenti
 			collectTypedSensor(ch, voltageDesc, voltageStateDesc, state, data)
 		case "W":
 			collectTypedSensor(ch, powerDesc, powerStateDesc, state, data)
+		case "err":
+			collectTypedSensor(ch, memoryDesc, memoryStateDesc, state, data)
 		default:
 			collectGenericSensor(ch, state, data)
 		}
