@@ -161,6 +161,7 @@ func freeipmiOutput(cmd, host, user, password string, arg ...string) ([]byte, er
 		"-h", host,
 		"-u", user,
 		"-p", password,
+		"-W", "authcap",
 	}
 	args = append(args, arg...)
 	out, err := exec.Command(fqcmd, args...).CombinedOutput()
