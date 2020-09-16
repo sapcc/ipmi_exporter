@@ -4,15 +4,16 @@
 #    docker build -f examples/$name/Dockerfile -t prometheus/golang-example-$name .
 
 # Builder image, where we build the example.
-FROM golang:1.11.0 AS build-env
+FROM golang:1.14 AS build-env
 WORKDIR /src
 ADD . /src
 RUN go get -d
 RUN CGO_ENABLED=0 GOOS=linux go build -a -tags netgo -ldflags '-w' -o ipmi_exporter
 
 # Final image.
-FROM ubuntu:19.04
+FROM ubuntu:18.04
 LABEL maintainer "sapcc <stefan.hipfel@sap.com>"
+LABEL source_repository="https://github.com/sapcc/ipmi-exporter"
 RUN apt-get update && apt-get install -y \
     wget \
     build-essential \
