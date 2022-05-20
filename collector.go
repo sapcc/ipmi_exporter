@@ -14,7 +14,9 @@
 package main
 
 import (
+	"os"
 	"path"
+	"strings"
 	"time"
 
 	"github.com/go-kit/log/level"
@@ -28,6 +30,8 @@ const (
 	targetLocal = ""
 )
 
+var sdrCacheDirectoy = "/root/.freeipmi/sdr-cache/"
+
 type collector interface {
 	Name() CollectorName
 	Cmd() string
@@ -36,6 +40,7 @@ type collector interface {
 }
 
 type metaCollector struct {
+	job    string
 	target string
 	module string
 	config *SafeConfig
@@ -94,6 +99,7 @@ func (c metaCollector) Collect(ch chan<- prometheus.Metric) {
 		host:   c.target,
 		config: config,
 	}
+	flushSensorSDRCache(target, config.GetFreeipmiConfig())
 
 	for _, collector := range config.GetCollectors() {
 		var up int
@@ -115,4 +121,36 @@ func targetName(target string) string {
 		return "[local]"
 	}
 	return target
+}
+
+func flushSensorSDRCache(target ipmiTarget, cfg string) error {
+	dirRead, err := os.Open(sdrCacheDirectoy)
+	if err != nil {
+		return err
+	}
+	dirFiles, err := dirRead.Readdir(0)
+	if err != nil {
+		return err
+	}
+	now := time.Now().Local()
+	nextTick := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, time.Local)
+
+	for index := range dirFiles {
+		file := dirFiles[index]
+		name := file.Name()
+		if strings.Contains(name, target.host) {
+			info, err := os.Stat(sdrCacheDirectoy + name)
+			if err != nil {
+				level.Error(logger).Log(err)
+				continue
+			}
+			modTime := info.ModTime()
+			level.Debug(logger).Log("SDR-Cache age: %s ", modTime)
+			if nextTick.Day()-modTime.Day() > 0 || nextTick.Month() != modTime.Month() {
+				level.Info(logger).Log("Starting to flush SDR Cache. Cache-Time %s, NextTick: %s", modTime, nextTick)
+				freeipmi.Execute("ipmi-sensors", []string{"--flush-cache"}, cfg, target.host, logger)
+			}
+		}
+	}
+	return nil
 }

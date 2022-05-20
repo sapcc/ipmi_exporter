@@ -36,7 +36,7 @@ var (
 	configFile = kingpin.Flag(
 		"config.file",
 		"Path to configuration file.",
-	).String()
+	).Default("./etc/config/ipmi_sap.yaml").String()
 	executablesPath = kingpin.Flag(
 		"freeipmi.path",
 		"Path to FreeIPMI executables (default: rely on $PATH).",
@@ -63,19 +63,19 @@ func remoteIPMIHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Remote scrape will not work without some kind of config, so be pedantic about it
-	module := r.URL.Query().Get("module")
-	if module == "" {
-		module = "default"
+	job := r.URL.Query().Get("job")
+	if job == "" {
+		job = "default"
 	}
-	if !sc.HasModule(module) {
-		http.Error(w, fmt.Sprintf("Unknown module %q", module), http.StatusBadRequest)
+	if !sc.HasModule(job) {
+		http.Error(w, fmt.Sprintf("Unknown job %q", job), http.StatusBadRequest)
 		return
 	}
 
-	level.Debug(logger).Log("msg", "Scraping target", "target", target, "module", module)
+	level.Debug(logger).Log("msg", "Scraping target", "target", target, "job", job)
 
 	registry := prometheus.NewRegistry()
-	remoteCollector := metaCollector{target: target, module: module, config: sc}
+	remoteCollector := metaCollector{target: target, module: job, config: sc}
 	registry.MustRegister(remoteCollector)
 	h := promhttp.HandlerFor(registry, promhttp.HandlerOpts{})
 	h.ServeHTTP(w, r)

@@ -17,6 +17,7 @@ import (
 	"fmt"
 	"math"
 	"strconv"
+	"strings"
 
 	"github.com/go-kit/log/level"
 	"github.com/prometheus/client_golang/prometheus"
@@ -60,6 +61,20 @@ var (
 	fanSpeedStateDesc = prometheus.NewDesc(
 		prometheus.BuildFQName(namespace, "fan_speed", "state"),
 		"Reported state of a fan speed sensor (0=nominal, 1=warning, 2=critical).",
+		[]string{"id", "name"},
+		nil,
+	)
+
+	memoryDesc = prometheus.NewDesc(
+		prometheus.BuildFQName(namespace, "memory", "errors"),
+		"Memory Errors",
+		[]string{"id", "name"},
+		nil,
+	)
+
+	memoryStateDesc = prometheus.NewDesc(
+		prometheus.BuildFQName(namespace, "memory", "state"),
+		"Reported state of a memory sensor (0=nominal, 1=warning, 2=critical).",
 		[]string{"id", "name"},
 		nil,
 	)
@@ -144,8 +159,9 @@ func (c IPMICollector) Args() []string {
 
 func (c IPMICollector) Collect(result freeipmi.Result, ch chan<- prometheus.Metric, target ipmiTarget) (int, error) {
 	excludeIds := target.config.ExcludeSensorIDs
+	includeTypes := target.config.IncludeSensorTypes
 	targetHost := targetName(target.host)
-	results, err := freeipmi.GetSensorData(result, excludeIds)
+	results, err := freeipmi.GetSensorData(result, excludeIds, includeTypes)
 	if err != nil {
 		level.Error(logger).Log("msg", "Failed to collect sensor data", "target", targetHost, "error", err)
 		return 0, err
@@ -162,12 +178,28 @@ func (c IPMICollector) Collect(result freeipmi.Result, ch chan<- prometheus.Metr
 			state = 2
 		case "N/A":
 			state = math.NaN()
+			//we dont want those metrics (does not contain any information)
+			continue
 		default:
 			level.Error(logger).Log("msg", "Unknown sensor state", "target", targetHost, "state", data.State)
 			state = math.NaN()
 		}
 
 		level.Debug(logger).Log("msg", "Got values", "target", targetHost, "data", fmt.Sprintf("%+v", data))
+
+		// if no state was set we will look at event data
+		if math.IsNaN(state) {
+			switch strings.ToUpper(data.Event) {
+			case "LIMIT NOT EXCEEDED":
+				state = 0
+			case "LIMIT EXCEEDED":
+				state = 2
+			case "PREDICTIVE FAILURE DEASSERTED":
+				state = 0
+			case "PREDICTIVE FAILURE ASSERTED":
+				state = 2
+			}
+		}
 
 		switch data.Unit {
 		case "RPM":
@@ -187,6 +219,8 @@ func (c IPMICollector) Collect(result freeipmi.Result, ch chan<- prometheus.Metr
 			default:
 				collectGenericSensor(ch, state, data)
 			}
+		case "err":
+			collectTypedSensor(ch, memoryDesc, memoryStateDesc, state, data, 1.0)
 		default:
 			collectGenericSensor(ch, state, data)
 		}
@@ -228,20 +262,26 @@ func collectTypedSensor(ch chan<- prometheus.Metric, desc, stateDesc *prometheus
 }
 
 func collectGenericSensor(ch chan<- prometheus.Metric, state float64, data freeipmi.SensorData) {
-	ch <- prometheus.MustNewConstMetric(
-		sensorValueDesc,
-		prometheus.GaugeValue,
-		data.Value,
-		strconv.FormatInt(data.ID, 10),
-		data.Name,
-		data.Type,
-	)
-	ch <- prometheus.MustNewConstMetric(
-		sensorStateDesc,
-		prometheus.GaugeValue,
-		state,
-		strconv.FormatInt(data.ID, 10),
-		data.Name,
-		data.Type,
-	)
+	/*
+		if !math.IsNaN(data.Value) {
+			ch <- prometheus.MustNewConstMetric(
+				sensorValueDesc,
+				prometheus.GaugeValue,
+				data.Value,
+				strconv.FormatInt(data.ID, 10),
+				data.Name,
+				data.Type,
+			)
+		}
+	*/
+	if !math.IsNaN(state) {
+		ch <- prometheus.MustNewConstMetric(
+			sensorStateDesc,
+			prometheus.GaugeValue,
+			state,
+			strconv.FormatInt(data.ID, 10),
+			data.Name,
+			data.Type,
+		)
+	}
 }

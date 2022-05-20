@@ -84,6 +84,15 @@ func contains(s []int64, elm int64) bool {
 	return false
 }
 
+func containsType(s []string, e string) bool {
+	for _, a := range s {
+		if a == e {
+			return true
+		}
+	}
+	return false
+}
+
 func getValue(ipmiOutput []byte, regex *regexp.Regexp) (string, error) {
 	for _, line := range strings.Split(string(ipmiOutput), "\n") {
 		match := regex.FindStringSubmatch(line)
@@ -148,7 +157,7 @@ func Execute(cmd string, args []string, config string, target string, logger log
 	return Result{out, err}
 }
 
-func GetSensorData(ipmiOutput Result, excludeSensorIds []int64) ([]SensorData, error) {
+func GetSensorData(ipmiOutput Result, excludeSensorIds []int64, includeTypes []string) ([]SensorData, error) {
 	var result []SensorData
 
 	if ipmiOutput.err != nil {
@@ -175,6 +184,10 @@ func GetSensorData(ipmiOutput Result, excludeSensorIds []int64) ([]SensorData, e
 		data.Name = line[1]
 		data.Type = line[2]
 		data.State = line[3]
+
+		if !containsType(includeTypes, data.Type) {
+			continue
+		}
 
 		value := line[4]
 		if value != "N/A" {

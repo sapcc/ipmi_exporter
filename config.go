@@ -110,17 +110,18 @@ type SafeConfig struct {
 // IPMIConfig is the Go representation of a module configuration in the yaml
 // config file.
 type IPMIConfig struct {
-	User             string                     `yaml:"user"`
-	Password         string                     `yaml:"pass"`
-	Privilege        string                     `yaml:"privilege"`
-	Driver           string                     `yaml:"driver"`
-	Timeout          uint32                     `yaml:"timeout"`
-	Collectors       []CollectorName            `yaml:"collectors"`
-	ExcludeSensorIDs []int64                    `yaml:"exclude_sensor_ids"`
-	WorkaroundFlags  []string                   `yaml:"workaround_flags"`
-	CollectorCmd     map[CollectorName]string   `yaml:"collector_cmd"`
-	CollectorArgs    map[CollectorName][]string `yaml:"default_args"`
-	CustomArgs       map[CollectorName][]string `yaml:"custom_args"`
+	User               string                     `yaml:"user"`
+	Password           string                     `yaml:"pass"`
+	Privilege          string                     `yaml:"privilege"`
+	Driver             string                     `yaml:"driver"`
+	Timeout            uint32                     `yaml:"timeout"`
+	Collectors         []CollectorName            `yaml:"collectors"`
+	ExcludeSensorIDs   []int64                    `yaml:"exclude_sensor_ids"`
+	IncludeSensorTypes []string                   `yaml:"include_sensor_types"`
+	WorkaroundFlags    []string                   `yaml:"workaround_flags"`
+	CollectorCmd       map[CollectorName]string   `yaml:"collector_cmd"`
+	CollectorArgs      map[CollectorName][]string `yaml:"default_args"`
+	CustomArgs         map[CollectorName][]string `yaml:"custom_args"`
 
 	// Catches all undefined fields and must be empty after parsing.
 	XXX map[string]interface{} `yaml:",inline"`

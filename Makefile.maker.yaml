@@ -1,0 +1,16 @@
+# Configuration file for <https://github.com/sapcc/go-makefile-maker>
+
+binaries:
+  - name:        ipmi_exporter
+    fromPackage: ./
+    installTo:   bin/
+
+coverageTest:
+  only: '/pkg'
+  except: '/test'
+
+variables:
+  GO_LDFLAGS: '-X github.com/prometheus-community/ipmi_exporter.VERSION=$(shell git rev-parse --verify HEAD | head -c 8)'
+
+vendoring:
+  enabled: true
