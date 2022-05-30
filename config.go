@@ -111,7 +111,7 @@ type SafeConfig struct {
 // config file.
 type IPMIConfig struct {
 	User               string                     `yaml:"user"`
-	Password           string                     `yaml:"pass"`
+	Password           string                     `yaml:"password"`
 	Privilege          string                     `yaml:"privilege"`
 	Driver             string                     `yaml:"driver"`
 	Timeout            uint32                     `yaml:"timeout"`
