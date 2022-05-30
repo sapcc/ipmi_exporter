@@ -4,10 +4,10 @@ RUN apt-get update && apt-get install -y make git
 COPY . /src
 RUN make -C /src install PREFIX=/build GO_BUILDFLAGS='-mod vendor'
 
+FROM keppel.eu-de-1.cloud.sap/ccloud-dockerhub-mirror/library/debian:bullseye-slim
 LABEL maintainer="The Prometheus Authors <prometheus-developers@googlegroups.com>"
 LABEL source_repository="https://github.com/sapcc/ipmi_exporter"
 
-FROM keppel.eu-de-1.cloud.sap/ccloud-dockerhub-mirror/library/debian:bullseye-slim
 RUN apt-get update && apt-get install -y freeipmi curl
 
 WORKDIR /
