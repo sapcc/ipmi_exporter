@@ -20,6 +20,7 @@ import (
 	"os/signal"
 	"syscall"
 
+	kingpin "github.com/alecthomas/kingpin/v2"
 	"github.com/go-kit/log"
 	"github.com/go-kit/log/level"
 	"github.com/prometheus/client_golang/prometheus"
@@ -29,7 +30,6 @@ import (
 	"github.com/prometheus/common/version"
 	"github.com/prometheus/exporter-toolkit/web"
 	webflag "github.com/prometheus/exporter-toolkit/web/kingpinflag"
-	kingpin "gopkg.in/alecthomas/kingpin.v2"
 )
 
 var (
@@ -41,11 +41,7 @@ var (
 		"freeipmi.path",
 		"Path to FreeIPMI executables (default: rely on $PATH).",
 	).String()
-	listenAddress = kingpin.Flag(
-		"web.listen-address",
-		"Address to listen on for web interface and telemetry.",
-	).Default(":9290").String()
-	webConfig = webflag.AddFlags(kingpin.CommandLine)
+	webConfig = webflag.AddFlags(kingpin.CommandLine, ":9290")
 
 	sc = &SafeConfig{
 		C: &Config{},
@@ -169,10 +165,10 @@ func main() {
             </html>`))
 	})
 
-	level.Info(logger).Log("msg", "Listening on", "address", *listenAddress)
+	level.Info(logger).Log("msg", "Listening on", "address", webConfig.WebListenAddresses)
 
-	srv := &http.Server{Addr: *listenAddress}
-	if err := web.ListenAndServe(srv, *webConfig, logger); err != nil {
+	srv := &http.Server{}
+	if err := web.ListenAndServe(srv, webConfig, logger); err != nil {
 		level.Error(logger).Log("msg", "HTTP listener stopped", "error", err)
 		os.Exit(1)
 	}
