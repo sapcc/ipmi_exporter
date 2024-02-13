@@ -1,4 +1,4 @@
-FROM keppel.eu-de-1.cloud.sap/ccloud-dockerhub-mirror/library/golang:1.17.10-bullseye as builder
+FROM keppel.eu-de-1.cloud.sap/ccloud-dockerhub-mirror/library/golang:1.20.14-bullseye as builder
 WORKDIR /go/src/github.com/prometheus-community/ipmi_exporter
 RUN apt-get update && apt-get install -y make git
 COPY . /src
