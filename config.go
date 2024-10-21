@@ -15,7 +15,7 @@ package main
 
 import (
 	"fmt"
-	"io/ioutil"
+	"os"
 	"strings"
 	"sync"
 
@@ -223,7 +223,7 @@ func (sc *SafeConfig) ReloadConfig(configFile string) error {
 	var err error
 
 	if configFile != "" {
-		config, err = ioutil.ReadFile(configFile)
+		config, err = os.ReadFile(configFile)
 		if err != nil {
 			level.Error(logger).Log("msg", "Error reading config file", "error", err)
 			return err
@@ -268,6 +268,11 @@ func (sc *SafeConfig) ConfigForTarget(target, module string) IPMIConfig {
 		config, ok = sc.C.Modules[module]
 		if !ok {
 			level.Error(logger).Log("msg", "Requested module not found, using default", "module", module, "target", targetName(target))
+		}
+		// check if password is set via environment variable
+		password, available := os.LookupEnv(fmt.Sprintf("%s_PASSWORD", strings.ToUpper(module)))
+		if available {
+			config.Password = password
 		}
 	}
 
