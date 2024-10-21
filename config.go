@@ -270,6 +270,7 @@ func (sc *SafeConfig) ConfigForTarget(target, module string) IPMIConfig {
 			level.Error(logger).Log("msg", "Requested module not found, using default", "module", module, "target", targetName(target))
 		}
 		// check if password is set via environment variable
+		module = strings.Replace(module, "/", "_", -1)
 		password, available := os.LookupEnv(fmt.Sprintf("%s_PASSWORD", strings.ToUpper(module)))
 		if available {
 			config.Password = password
