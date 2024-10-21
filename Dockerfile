@@ -1,4 +1,4 @@
-FROM keppel.eu-de-1.cloud.sap/ccloud-dockerhub-mirror/library/golang:1.21.7-bookworm as builder
+FROM keppel.eu-de-1.cloud.sap/ccloud-dockerhub-mirror/library/golang:1.21.11-bookworm as builder
 WORKDIR /go/src/github.com/prometheus-community/ipmi_exporter
 RUN apt-get update && apt-get install -y make git
 COPY . /src
